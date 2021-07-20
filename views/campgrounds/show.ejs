@@ -1,0 +1,58 @@
+<%- include("../partials/header.ejs"); %>
+<div class="container">
+	<div class="row">
+		<div class="col-md-3">
+			<p class="lead">YelpCamp</p>
+			<div class="list-group">
+				<li class="list-group-item">Info 1</li>
+				<li class="list-group-item">Info 2</li>
+				<li class="list-group-item">Info 3</li>
+			</div>
+		</div>
+		<div class="col-md-9">
+			<div class="thumbnail">
+				<img class="img-responsive" src="<%= campground.image %>">
+				<div class="caption-full">
+					<h4 class="pull-right">$9.00/night</h4>
+					<h4>campground added by <%= campground.createdBy.username %></h4>
+					<h4><a href=""></a><%= campground.name %></h4>
+					<p><%= campground.desc %></p>
+				</div>
+			</div>
+			<div class="well">
+				<div class="text-right">
+					<a  class="btn btn-success" href="/campgrounds/<%= campground._id %>/comments/new">Post a comment</a>
+					<a  class="btn btn-warning" href="/campgrounds/<%= campground._id %>/edit">Edit campground</a>
+					<form id="deleteForm" action="/campgrounds/<%= campground._id %>?_method=DELETE" method="POST" >
+					<input type="submit" value="Delete campground" class="btn btn-danger">
+					</form>
+					<hr>
+					 
+				</div>
+				<%  for(let comment of campground.comments) { %>
+					<div class="row">
+						<div class="col-md-12">
+							<strong><%= comment.author.username %></strong>
+							<span class="pull-right">10 days ago</span>
+							<p class="caption"><%= comment.text %></p>
+							<a class="btn btn-sm btn-outline-warning" 
+							   href="/campgrounds/<%= campground._id %>/comments/<%= comment.id %>/edit">
+							Edit comment</a>
+							<form style="display : inline;" action="/campgrounds/<%= campground._id %>/comments/<%= comment.id %>?_method=DELETE" method="POST">
+								<input type="submit" value="Delete comment" class="btn btn-sm btn-outline-danger">
+							</form>
+						</div>
+					</div>
+					
+				<% } %>
+				
+			</div>
+		</div>
+	</div>
+	
+</div>
+<br>
+
+<a href="/campgrounds">View all campgrounds</a>
+
+<%- include("../partials/footer.ejs"); %>

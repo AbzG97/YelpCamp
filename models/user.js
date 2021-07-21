@@ -15,14 +15,12 @@ const userSchema = new mongoose.Schema({
 		unique: false
 	},
 
-	auth_tokens: [
-			{
+	auth_tokens: [{
 				token: {
 					type: "string",
 					required: true
 				}
-			}
-		]
+			}]
 });
 
 

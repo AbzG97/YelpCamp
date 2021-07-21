@@ -10,8 +10,13 @@ var middleware = {};
 middleware.authenticate = async (req, res, next) => {
 	try {
 		const user_token = req.cookies.auth_token;
+		console.log(user_token);
 		const decoded_token = jwt.verify(user_token, 'secretKey');
-		const auth_user = await user_model.findOne({_id: decoded_token.id ,'auth_tokens.token': user_token});
+		const auth_user = await user_model.findOne({_id: decoded_token.id, 'auth_tokens.token': user_token});
+		console.log(auth_user);
+		if (!auth_user) {
+			return res.status(401).send({message :"Please authenticate"});
+		}
 		req.user = auth_user;
 		next();
 

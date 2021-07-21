@@ -4,6 +4,7 @@ const user_model = require("../models/user.js");
 const passport = require("passport");
 const jwt = require("jsonwebtoken");
 const middleware = require("../middleware/index");
+const bcrypt = require("bcrypt");
 	  
 
 router.get("/",function(req,res){
@@ -28,8 +29,14 @@ router.post("/Register", async (req, res) => {
 	const new_user = new user_model(req.body);
 	// console.log(new_user);
 	try {
+		// generate token
 		const new_token = jwt.sign({id: new_user._id}, "secretKey");
 		new_user.auth_tokens = new_user.auth_tokens.concat({token: new_token});
+
+		// hash password
+		const salt = await bcrypt.genSalt(10);
+		const hashed = await bcrypt.hash(new_user.password, salt);
+		new_user.password = hashed;
 		await new_user.save();
 		res.cookie('auth_token',new_token, { httpOnly: true, secure: false, maxAge: 3600000 });
 		res.status(201).send({message: "user created", new_user: new_user});

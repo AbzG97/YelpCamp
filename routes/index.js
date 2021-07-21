@@ -1,7 +1,9 @@
 const express = require("express");
 const router = express.Router();
-const User = require("../models/user.js");
+const user_model = require("../models/user.js");
 const passport = require("passport");
+const jwt = require("jsonwebtoken");
+const middleware = require("../middleware/index");
 	  
 
 router.get("/",function(req,res){
@@ -20,24 +22,20 @@ router.get("/Register", function(req, res){
 });
 
 // take information from the form and create a new user to for registation and saving it to the database
-router.post("/Register", function(req, res){
-	let username = req.body.username;
-	let password = req.body.password;
+router.post("/Register", async (req, res) => {
+
 	// creating a new user 
-	User.register(new User({username: username}), password, function(err, createdUser){
-		if(err){
-			console.log("failed to create user");
-			return res.render("users/registrationForm.ejs");
-		} else {
-			console.log("the following user data have been saved to the database");
-			console.log(createdUser);
-			passport.authenticate("local")(req, res, function(){
-				req.flash("success", "Login successful");
-				res.redirect("/campgrounds");
-			});
-		}
-	});
-	
+	const new_user = new user_model(req.body);
+	// console.log(new_user);
+	try {
+		const new_token = jwt.sign({id: new_user._id}, "secretKey");
+		new_user.auth_tokens = new_user.auth_tokens.concat({token: new_token});
+		await new_user.save();
+		res.cookie('auth_token',new_token, { httpOnly: true, secure: false, maxAge: 3600000 });
+		res.status(201).send({message: "user created", new_user: new_user});
+	} catch {
+		res.status(500).send({message: "Server error"});
+	}
 });
 
 // ==============================
@@ -69,6 +67,16 @@ router.get("/Logout", function(req, res){
 	res.redirect("/campgrounds");
 });
 
+
+// get user info 
+router.get("/profile", middleware.authenticate, async (req, res) => {
+	try {
+		res.send({user: req.user});
+
+	} catch {
+		res.status(500).send({message: "Server error"});
+	}
+});
 
 
 module.exports = router;

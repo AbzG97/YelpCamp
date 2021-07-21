@@ -2,7 +2,24 @@
 const Campground = require("../models/campground.js"),
  	  Comment = require("../models/comment.js");
 
+const user_model = require("../models/user");
+const jwt = require("jsonwebtoken");
+
 var middleware = {};
+
+middleware.authenticate = async (req, res, next) => {
+	try {
+		const user_token = req.cookies.auth_token;
+		const decoded_token = jwt.verify(user_token, 'secretKey');
+		const auth_user = await user_model.findOne({_id: decoded_token.id ,'auth_tokens.token': user_token});
+		req.user = auth_user;
+		next();
+
+	} catch {
+		res.status(500).send({message: "Please authenticate to procced"});
+	}
+
+}
 
 
 
@@ -61,6 +78,5 @@ middleware.isLoggedIn = function(req, res, next){
 		res.redirect("/Login");
 	}	
 };
-
 
 module.exports = middleware;

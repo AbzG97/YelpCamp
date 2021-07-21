@@ -8,6 +8,7 @@ const express = require("express"),
 	  passportLocalMongoose = require("passport-local-mongoose"),
       methodOverride = require("method-override"),
 	  flash = require("connect-flash");
+	  cookieParser = require("cookie-parser");
 
 // MODELS
 const Campground = require("./models/campground.js"),
@@ -22,33 +23,35 @@ const campgroundRoutes = require("./routes/campgroundRoutes.js"),
 
 
 
-app.use(bodyParser.urlencoded({extended: true}));
-mongoose.connect("mongodb://localhost/yelp_camp_db", {useUnifiedTopology: true, useNewUrlParser: true});
+app.use(express.urlencoded({extended: true}));
+app.use(express.json());
+mongoose.connect("mongodb://localhost/yelp_camp_db", {useUnifiedTopology: true, useNewUrlParser: true, useCreateIndex: true});
 app.use(express.static(__dirname +"/public"));
 app.use(methodOverride("_method"));
 app.use(flash());
+app.use(cookieParser());
 
-seedDB();
+// seedDB();
 
 
 // PASSPORT CONFIGs
-app.use(require("express-session")({
-	secret: "is yall finished, or yall done ?",
-	resave: false,
-	saveUninitialized: false
-}));
-app.use(passport.initialize());
-app.use(passport.session());
-passport.use(new localStrategy(User.authenticate()));
-passport.serializeUser(User.serializeUser());
-passport.deserializeUser(User.deserializeUser());
+// app.use(require("express-session")({
+// 	secret: "is yall finished, or yall done ?",
+// 	resave: false,
+// 	saveUninitialized: false
+// }));
+// app.use(passport.initialize());
+// app.use(passport.session());
+// passport.use(new localStrategy(User.authenticate()));
+// passport.serializeUser(User.serializeUser());
+// passport.deserializeUser(User.deserializeUser());
 
-app.use(function(req, res, next){
-	res.locals.currentUser = req.user;
-	res.locals.error = req.flash("error");
-	res.locals.success = req.flash("success");
-	next();
-});
+// app.use(function(req, res, next){
+// 	res.locals.currentUser = req.user;
+// 	res.locals.error = req.flash("error");
+// 	res.locals.success = req.flash("success");
+// 	next();
+// });
 
 // using the routes
 app.use(campgroundRoutes);

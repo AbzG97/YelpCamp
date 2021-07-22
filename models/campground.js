@@ -22,5 +22,7 @@ const campgroundSchema = new mongoose.Schema({
 	}
 });
 
+const campground = mongoose.model("Campground", campgroundSchema);
+
 // created a model which we can use in order to access mongoose method and interact with mongodb and our database
-module.exports = mongoose.model("Campground", campgroundSchema);
+module.exports = campground;

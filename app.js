@@ -19,7 +19,7 @@ const Campground = require("./models/campground.js"),
 // ROUTES
 const campgroundRoutes = require("./routes/campgroundRoutes.js"),
 	  commentRoutes = require("./routes/commentRoutes.js"),
-	  authenRoutes = require("./routes/index.js");
+	  authenRoutes = require("./routes/UserRoutes.js");
 
 
 

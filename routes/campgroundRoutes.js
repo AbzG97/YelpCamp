@@ -1,114 +1,107 @@
 const express = require("express");
 const router = express.Router();
-const Campground = require("../models/campground.js");
+const campground_model = require("../models/campground.js");
 const middleware = require("../middleware");
 
-//========================
-//   CAMPGROUND ROUTES
-//=======================
 
-//INDEX (GET)route -  shows all of the current campgrounds
-router.get("/campgrounds",function(req,res){
-	// get all campgrounds from db 
-	
-	Campground.find({}, function(err, allCampgrounds){
-		if(err){
-			console.log("FAILED TO RETRIEVE CAMPS");
-		} else{
-			res.render("campgrounds/index.ejs", {campgrounds : allCampgrounds});
+
+//shows all of the current campgrounds
+router.get("/campgrounds", async(req, res) => {
+	try {
+		const campgrounds = await campground_model.find({});
+		if(campgrounds.length === 0){
+			res.status(304).send({message: "No campgrounds were found in the database"});
 		}
+		// res.render("campgrounds/index.ejs", {campgrounds : campgrounds, currentUser: req.user});
+		res.status(200).send({campgrounds: campgrounds});
+	}
+	catch {
+		res.status(500).send({message: "Server error"});
+
+	}
 		
-	});
-//	
-	
-});
-// NEW (GET) ROUTE - sends the form to add camps
-router.get("/campgrounds/campgroundsForm", middleware.isLoggedIn, function(req,res){
-	res.render("campgrounds/new.ejs");
-	
 });
 
-// CREATE (POST) ROUTE - creates a new campground
-router.post("/campgrounds", middleware.isLoggedIn,  function(req,res){
-	console.log(req.body);
+router.get("/campgrounds/campgroundsForm", middleware.authenticate, async (req,res) => {
+	res.render("campgrounds/new.ejs");
+});
+
+router.post("/campgrounds", middleware.authenticate, async (req,res) => {
 	let name= req.body.campName;
 	let image= req.body.campImg;
 	let desc = req.body.campDesc;
-	let newCampground = {name: name , image: image, desc: desc};
-	Campground.create(newCampground, function(err, newCampground){
-		if(err){
-			console.log("SOMETHING WENT WRONG");
-		}else{
-			// adding user associations to the campground
-			newCampground.createdBy.id = req.user._id;
-			newCampground.createdBy.username = req.user.username;
-			console.log(newCampground);
-			newCampground.save();
-			res.redirect("/campgrounds");
-		}	
-	});	
+	let data = {name: name , image: image, desc: desc};
+	try {
+		const new_campground = new campground_model(data);
+		new_campground.createdBy.id = req.user._id;
+		new_campground.createdBy.username = req.user.username;
+		await new_campground.save();
+		res.status(201).send({message:"campground created", new_campground: new_campground});
+		// res.redirect("/campgrounds")
+	}
+	catch {
+		res.status(500).send({message: "Server error"});
+	}
+			
 });
 
 
-// SHOW (GET) ROUTE - displays info about the selected campground
-router.get("/campgrounds/:id", function(req, res){
-	// find the selected campground with the provided ID
-	let id = req.params.id;
-	Campground.findById(id).populate("comments").exec(function(err, foundCampground){
-		if(err){
-			console.log("failed to retrive the selected campground");
-		}else {
-			// show template of that campground by returning the found campground giving a variable so it can be used in ejs
-			//console.log(foundCampground);
-			res.render("campgrounds/show.ejs", {campground: foundCampground});
-			
+// displays info about the selected campground
+router.get("/campgrounds/:id", async (req, res) => {
+	try {
+		const found_campground = await campground_model.findById(req.params.id);
+		if(!found_campground){
+			res.status(304).send({message: "No campground was found in the database"});
 		}
-	});
-	
+		res.status(200).send({message: "Campground found", found_campground: found_campground});
+		// res.render("campgrounds/show.ejs", {campground: foundCampground});
+	}
+	catch {
+		res.status(500).send({message: "Server error"});
+	}
 });
 
 // send the edit form to the selected campground
-router.get("/campgrounds/:id/edit", middleware.checkCampgroundOwnership, function(req, res){
-	Campground.findById(req.params.id, function(err, foundCampground){
-		if(err){
-			console.log("campground not found");
-		} else {
-			// check if user owns the campground if so they can edit it
-			res.render("campgrounds/edit.ejs", {campground : foundCampground});
+router.get("/campgrounds/:id/edit", middleware.authenticate, async (req, res) => {
+	try {
+		const found_campground = await campground_model.findOne({_id: req.params.id, 'createdBy.id': req.user._id});
+		if(!found_campground){
+			res.status(304).send({message: "No campground was found in the database"});
 		}
-	});
+		res.render("campgrounds/edit.ejs", {campground : found_campground});
+
+
+	} 
+	catch {
+
+	}
 });
 
 
 // updating the campground
-router.put("/campgrounds/:id", middleware.checkCampgroundOwnership, function(req, res){
+router.put("/campgrounds/:id", middleware.authenticate, async (req, res) => {
 	let id = req.params.id;
 	let updatedName = req.body.campName;
 	let updatedImage = req.body.campImg;
 	let updatedDesc = req.body.campDesc;
-	let updatedCampground = {name: updatedName, image: updatedImage, desc: updatedDesc};
-	Campground.findByIdAndUpdate(id, updatedCampground, function(err, updatedCampground){
-		if(err){
-			console.log("failed to updated campground");
-			res.redirect("/campgrounds");
-		} else {
-			console.log("updated info display: \n " + updatedCampground);
-			res.redirect("/campgrounds/"+ id);
-		}
-	});
+	let updated_data = {name: updatedName, image: updatedImage, desc: updatedDesc};
+	try {
+		const updated_campground = await campground_model.findOneAndUpdate({_id: req.params.id, 'createdBy.id': req.user._id}, updated_data);
+		res.status(200).send({message: "Campground data updated", updated_campground: updated_campground});
+	} catch {
+		res.status(500).send({message: "Server error"});
+	}
 });
 
 // Deleting campgrounds
-router.delete("/campgrounds/:id", middleware.checkCampgroundOwnership,  function(req, res){
-	let id = req.params.id;
-	Campground.findByIdAndRemove(id, function(err, removedCampground){
-		if(err){
-			console.log("failed to remove camp");
-		} else {
-			console.log("camp removed redirecting to main page....");
-			res.redirect("/campgrounds");
-		}
-	});
+router.delete("/campgrounds/:id", middleware.authenticate,  async (req, res) => {
+	try {
+		const updated_campground = await campground_model.findOneAndDelete({_id: req.params.id, 'createdBy.id': req.user._id});
+		res.status(200).send({message: "Delete successful"});
+	} catch {
+		res.status(500).send({message: "Server error"});
+
+	}
 });
 
 module.exports = router;
